@@ -1,0 +1,12 @@
+{
+  "name": "redis-sentinel-practice",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}

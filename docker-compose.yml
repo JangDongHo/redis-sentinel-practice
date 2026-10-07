@@ -1,0 +1,43 @@
+services:
+  redis-master:
+    image: redis:7
+    container_name: redis-master
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+
+  redis-replica:
+    image: redis:7
+    container_name: redis-replica
+    command: redis-server --replicaof redis-master 6379
+    depends_on:
+      - redis-master
+    ports:
+      - "6380:6379"
+
+  sentinel:
+    image: redis:7
+    container_name: redis-sentinel
+    # Sentinel은 실행 중 설정 파일을 직접 다시 쓴다(failover 결과 저장).
+    # bind mount 파일은 쓸 수 없으므로 컨테이너 내부로 복사해서 사용한다.
+    command: sh -c "cp /etc/redis/sentinel.conf /data/sentinel.conf && exec redis-server /data/sentinel.conf --sentinel"
+    depends_on:
+      - redis-master
+      - redis-replica
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./sentinel/sentinel.conf:/etc/redis/sentinel.conf:ro
+
+  app:
+    image: node:20
+    container_name: sentinel-app
+    working_dir: /app
+    command: sh -c "npm install --no-audit --no-fund && node index.js"
+    depends_on:
+      - sentinel
+    environment:
+      SENTINEL_HOST: sentinel
+      SENTINEL_PORT: "26379"
+    volumes:
+      - ./app:/app
